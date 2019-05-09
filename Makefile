@@ -1,8 +1,7 @@
 arch ?= x86_64
 kernel := build/kernel-$(arch).bin
 iso := build/os-$(arch).iso
-msdos_com := src/arch/$(arch)/*.com
-msdos_sys := src/arch/$(arch)/*.sys
+msdos_image := src/arch/$(arch)/filesystem.img
 
 linker_script := src/arch/$(arch)/linker.ld
 grub_cfg := src/arch/$(arch)/grub.cfg
@@ -24,10 +23,9 @@ iso: $(iso)
 
 $(iso): $(kernel) $(grub_cfg)
 	@mkdir -p build/isofiles/boot/grub
+	@cp $(msdos_image) build/isofiles/boot
 	@cp $(kernel) build/isofiles/boot/kernel.bin
 	@cp $(grub_cfg) build/isofiles/boot/grub
-	@cp $(msdos_com) build/isofiles/boot
-	@cp $(msdos_sys) build/isofiles/boot
 	@grub-mkrescue -o $(iso) build/isofiles 2> /dev/null
 	@rm -r build/isofiles
 
@@ -37,12 +35,4 @@ $(kernel): $(assembly_object_files) $(linker_script)
 # compile assembly files
 build/arch/$(arch)/%.o: src/arch/$(arch)/%.asm
 	@mkdir -p $(shell dirname $@)
-	@nasm asm.asm -o asm.com
-	@nasm -felf64 boot.asm
-	@nasm command.asm -o command.com
-	@nasm hex2bin.asm -o hex2bin.com
-	@nasm io.asm -o io.sys
-	@nasm msdos.asm -o msdos.sys
-	@nasm -felf64 multiboot_header.asm
-	@nasm stddos.asm -o comp.com
-	@nasm trans.asm -o trans.com
+	@nasm -felf64 $< -o $@
