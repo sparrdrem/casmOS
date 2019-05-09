@@ -2,6 +2,7 @@ arch ?= x86_64
 kernel := build/kernel-$(arch).bin
 iso := build/os-$(arch).iso
 msdos_image := src/arch/$(arch)/filesystem.img
+memdisk := src/arch/$(arch)/memdisk
 
 linker_script := src/arch/$(arch)/linker.ld
 grub_cfg := src/arch/$(arch)/grub.cfg
@@ -24,6 +25,7 @@ iso: $(iso)
 $(iso): $(kernel) $(grub_cfg)
 	@mkdir -p build/isofiles/boot/grub
 	@cp $(msdos_image) build/isofiles/boot
+	@cp $(memdisk) build/isofiles/boot
 	@cp $(kernel) build/isofiles/boot/kernel.bin
 	@cp $(grub_cfg) build/isofiles/boot/grub
 	@grub-mkrescue -o $(iso) build/isofiles 2> /dev/null
