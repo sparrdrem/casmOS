@@ -33,4 +33,12 @@ $(kernel): $(assembly_object_files) $(linker_script)
 # compile assembly files
 build/arch/$(arch)/%.o: src/arch/$(arch)/%.asm
 	@mkdir -p $(shell dirname $@)
-	@nasm -felf64 $< -o $@
+	@nasm asm.asm -o basic.com
+	@nasm -felf64 boot.asm
+	@nasm command.asm -o command.com
+	@nasm hex2bin.asm -o exe2bin.exe
+	@nasm io.asm -o io.sys
+	@nasm msdos.asm -o msdos.sys
+	@nasm -felf64 multiboot_header.asm
+	@nasm stddos.asm -o comp.com
+	@nasm trans.asm -o basica.com
