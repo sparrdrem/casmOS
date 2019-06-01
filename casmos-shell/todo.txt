@@ -1,0 +1,11 @@
+casmOS needs alot more than just freecom and kernel. Some applications that should be looked further into adding is the following:
+
+- casmOS Official Splash
+- FORMAT.COM (THE NAME IS LITERALLY WHAT IT DOES)
+- FDISK.EXE (FIXED DISK PARTITION EDITOR)
+- MOUSE.EXE (mouse driver for casmOS)
+- MINI.CAB contents (will make casmOS less open source but that is the only place where this will not be open source anyway so...)
+- CALCULATOR.EXE (shell/wm)
+- WPSFCASMOS (based on IBM Workplace Shell For Windows)
+- WINBAR (alternate wm for casmOS in case of WPSFCASMOS failure in compilation)
+- CALMIRA II (another wm for casmOS to look just like Win95)
