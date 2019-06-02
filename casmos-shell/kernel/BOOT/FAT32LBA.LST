@@ -1,0 +1,405 @@
+     1                                  ; This is an LBA-enabled FreeDOS FAT32 boot sector (single sector!).
+     2                                  ; You can use and copy source code and binaries under the terms of the
+     3                                  ; GNU Public License (GPL), version 2 or newer. See www.gnu.org for more.
+     4                                  
+     5                                  ; Based on earlier work by FreeDOS kernel hackers, modified heavily by
+     6                                  ; Eric Auer and Jon Gentle in 7 / 2003.
+     7                                  ;
+     8                                  ; Features: Uses LBA and calculates all variables from BPB/EBPB data,
+     9                                  ; thus making partition move / resize / image-restore easier. FreeDOS
+    10                                  ; can boot from FAT32 partitions which start > 8 GB boundary with this
+    11                                  ; boot sector. Disk geometry knowledge is not needed for booting.
+    12                                  ;
+    13                                  ; Windows uses 2-3 sectors for booting (sector stage, statistics sector,
+    14                                  ; filesystem stage). Only using 1 sector for FreeDOS makes multi-booting
+    15                                  ; of FreeDOS and Windows on the same filesystem easier.
+    16                                  ;
+    17                                  ; Requirements: LBA BIOS and 386 or better CPU. Use the older CHS-only
+    18                                  ; boot sector if you want FAT32 on really old PCs (problems: you cannot
+    19                                  ; boot from > 8 GB boundary, cannot move / resize / ... without applying
+    20                                  ; SYS again if you use the CHS-only FAT32 boot sector).
+    21                                  ;
+    22                                  ; FAT12 / FAT16 hints: Use the older CHS-only boot sector unless you
+    23                                  ; have to boot from > 8 GB. The LBA-and-CHS FAT12 / FAT16 boot sector
+    24                                  ; needs applying SYS again after move / resize / ... a variant of that
+    25                                  ; boot sector without CHS support but with better move / resize / ...
+    26                                  ; support would be good for use on LBA harddisks.
+    27                                  
+    28                                  
+    29                                  ; Memory layout for the FreeDOS FAT32 single stage boot process:
+    30                                  
+    31                                  ;	...
+    32                                  ;	|-------| 1FE0:7E00
+    33                                  ;	|BOOTSEC|
+    34                                  ;	|RELOC.	|
+    35                                  ;	|-------| 1FE0:7C00
+    36                                  ;	...
+    37                                  ;	|-------| 2000:0200
+    38                                  ;	|  FAT  | (only 1 sector buffered)
+    39                                  ;	|-------| 2000:0000
+    40                                  ;	...
+    41                                  ;	|-------| 0000:7E00
+    42                                  ;	|BOOTSEC| overwritten by the kernel, so the
+    43                                  ;	|ORIGIN | bootsector relocates itself up...
+    44                                  ;	|-------| 0000:7C00
+    45                                  ;	...
+    46                                  ;	|-------|
+    47                                  ;	|KERNEL	| maximum size 134k (overwrites bootsec origin)
+    48                                  ;	|LOADED	| (holds 1 sector directory buffer before kernel load)
+    49                                  ;	|-------| 0060:0000
+    50                                  ;	...
+    51                                  
+    52                                  segment	.text
+    53                                  
+    54                                  		org	0x7c00		; this is a boot sector
+    55                                  
+    56 00000000 EB58                    Entry:		jmp	short real_start
+    57 00000002 90                      		nop
+    58                                  
+    59                                  ;	bp is initialized to 7c00h
+    60                                  ; %define bsOemName	bp+0x03	; OEM label (8)
+    61                                  %define bsBytesPerSec	bp+0x0b ; bytes/sector (dw)
+    62                                  %define bsSecPerClust	bp+0x0d	; sectors/allocation unit (db)
+    63                                  %define bsResSectors	bp+0x0e	; # reserved sectors (dw)
+    64                                  %define bsFATs		bp+0x10	; # of fats (db)
+    65                                  ; %define bsRootDirEnts	bp+0x11	; # of root dir entries (dw, 0 for FAT32)
+    66                                  			; (FAT32 has root dir in a cluster chain)
+    67                                  ; %define bsSectors	bp+0x13	; # sectors total in image (dw, 0 for FAT32)
+    68                                  			; (if 0 use nSectorHuge even if FAT16)
+    69                                  ; %define bsMedia	bp+0x15	; media descriptor: fd=2side9sec, etc... (db)
+    70                                  ; %define sectPerFat	bp+0x16	; # sectors in a fat (dw, 0 for FAT32)
+    71                                  			; (FAT32 always uses xsectPerFat)
+    72                                  %define sectPerTrack	bp+0x18	; # sectors/track
+    73                                  ; %define nHeads	bp+0x1a	; # heads (dw)
+    74                                  %define nHidden		bp+0x1c	; # hidden sectors (dd)
+    75                                  ; %define nSectorHuge	bp+0x20	; # sectors if > 65536 (dd)
+    76                                  %define xsectPerFat	bp+0x24	; Sectors/Fat (dd)
+    77                                  			; +0x28 dw flags (for fat mirroring)
+    78                                  			; +0x2a dw filesystem version (usually 0)
+    79                                  %define xrootClst	bp+0x2c	; Starting cluster of root directory (dd)
+    80                                  			; +0x30 dw -1 or sector number of fs.-info sector
+    81                                  			; +0x32 dw -1 or sector number of boot sector backup
+    82                                  			; (+0x34 .. +0x3f reserved)
+    83                                  %define drive		bp+0x40	; Drive number
+    84                                  %define loadsegoff_60	bp+loadseg_off-Entry
+    85                                  
+    86                                  %define LOADSEG		0x0060
+    87                                  
+    88                                  %define FATSEG		0x2000
+    89                                  
+    90                                  %define	fat_secshift	fat_afterss-1	; each fat sector describes 2^??
+    91                                  					; clusters (db) (selfmodifying)
+    92                                  %define fat_sector	bp+0x44		; last accessed FAT sector (dd)
+    93                                  					; (overwriting unused bytes)
+    94                                  %define fat_start	bp+0x48		; first FAT sector (dd)
+    95                                  					; (overwriting unused bytes)
+    96                                  %define data_start	bp+0x4c		; first data sector (dd)
+    97                                  					; (overwriting unused bytes)
+    98                                  
+    99 00000003 00<rept>                		times	0x5a-$+$$ db 0
+   100                                  		; not used: [0x42] = byte 0x29 (ext boot param flag)
+   101                                  		; [0x43] = dword serial
+   102                                  		; [0x47] = label (padded with 00, 11 bytes)
+   103                                  		; [0x52] = "FAT32",32,32,32 (not used by Windows)
+   104                                  		; ([0x5a] is where FreeDOS parts start)
+   105                                  
+   106                                  ;-----------------------------------------------------------------------
+   107                                  ; ENTRY
+   108                                  ;-----------------------------------------------------------------------
+   109                                  
+   110 0000005A FC                      real_start:	cld
+   111 0000005B FA                      		cli
+   112 0000005C 29C0                    		sub	ax, ax
+   113 0000005E 8ED8                    		mov	ds, ax
+   114 00000060 BD007C                  		mov	bp, 0x7c00
+   115                                  
+   116 00000063 B8E01F                  		mov	ax, 0x1FE0
+   117 00000066 8EC0                    		mov	es, ax
+   118 00000068 89EE                    		mov	si, bp
+   119 0000006A 89EF                    		mov	di, bp
+   120 0000006C B90001                  		mov	cx, 0x0100
+   121 0000006F F3A5                    		rep	movsw		; move boot code to the 0x1FE0:0x0000
+   122 00000071 EA[7A00]E01F            		jmp	word 0x1FE0:cont
+   123                                  
+   124 00000076 00006000                loadseg_off	dw	0, LOADSEG
+   125                                  
+   126                                  ; -------------
+   127                                  
+   128 0000007A 8ED8                    cont:		mov	ds, ax
+   129 0000007C 8ED0                    		mov	ss, ax		; stack and BP-relative moves up, too
+   130 0000007E 8D66E0                                  lea     sp, [bp-0x20]
+   131 00000081 FB                      		sti
+   132 00000082 885640                  		mov	[drive], dl	; BIOS passes drive number in DL
+   133                                  
+   134 00000085 BE[C101]                		mov	si, msg_LoadFreeDOS
+   135 00000088 E8F400                  		call	print		; modifies AX BX SI
+   136                                  
+   137                                  
+   138                                  ; -------------
+   139                                  
+   140                                  ;	CALCPARAMS: figure out where FAT and DATA area starts
+   141                                  ;	(modifies EAX EDX, sets fat_start and data_start variables)
+   142                                  
+   143 0000008B 6631C0                  calc_params:	xor	eax, eax
+   144 0000008E 66894644                		mov	[fat_sector], eax	; init buffer status
+   145                                  
+   146                                  		; first, find fat_start:
+   147 00000092 8B460E                  		mov	ax, [bsResSectors]	; no movzx eax, word... needed
+   148 00000095 6603461C                		add	eax, [nHidden]
+   149 00000099 66894648                		mov 	[fat_start], eax	; first FAT sector
+   150 0000009D 6689464C                		mov	[data_start], eax	; (only first part of value)
+   151                                  
+   152                                  		; next, find data_start:
+   153 000000A1 668B4610                		mov	eax, [bsFATs]		; no movzx ... byte needed:
+   154                                  		; the 2 dw after the bsFATs db are 0 by FAT32 definition :-).
+   155 000000A5 66F76E24                		imul	dword [xsectPerFat]	; (also changes edx)
+   156 000000A9 6601464C                		add	[data_start], eax	; first DATA sector
+   157                                  						; (adding in RAM is shorter!)
+   158                                  
+   159                                  		; finally, find fat_secshift:
+   160 000000AD B80002                  		mov	ax, 512	; default sector size (means default shift)
+   161                                  				; shift = log2(secSize) - log2(fatEntrySize)
+   162                                  ;---		mov	cl, 9-2	; shift is 7 for 512 bytes per sector
+   163 000000B0 3B460B                  fatss_scan:	cmp	ax, [bsBytesPerSec]
+   164 000000B3 7408                    		jz	fatss_found
+   165 000000B5 01C0                    		add	ax,ax
+   166                                  ;---		inc	cx
+   167 000000B7 FF06[3401]              		inc	word [fat_secshift]	;XXX	; initially 9-2 (byte!)
+   168 000000BB EBF3                    		jmp 	short fatss_scan	; try other sector sizes
+   169                                  fatss_found:
+   170                                  ;---		mov	[fat_secshift], cl
+   171                                  
+   172                                  ; -------------
+   173                                  
+   174                                  ; FINDFILE:	Searches for the file in the root directory.
+   175                                  ; Returns:	EAX = first cluster of file
+   176                                  
+   177 000000BD 668B462C                		mov	eax, [xrootClst]	; root dir cluster
+   178                                  
+   179 000000C1 6650                    ff_next_clust:	push	eax			; save cluster
+   180 000000C3 E89400                  		call	convert_cluster
+   181 000000C6 724D                    		jc	boot_error		; EOC encountered
+   182                                  		; EDX is clust/sector, EAX is sector
+   183                                  				
+   184 000000C8 C45E76                  ff_next_sector:	les	bx, [loadsegoff_60]	; load to loadseg:0
+   185 000000CB E8B700                  		call	readDisk
+   186                                  ;---		push	eax			; save sector
+   187                                  
+   188                                  ;---		xor	ax, ax		; first dir. entry in this sector
+   189 000000CE 31FF                    		xor	di, di			;XXX
+   190                                  
+   191                                  		; Search for KERNEL.SYS file name, and find start cluster.
+   192 000000D0 B90B00                  ff_next_entry:	mov	cx, 11
+   193 000000D3 BE[F101]                		mov	si, filename
+   194                                  ;---		mov	di, ax
+   195 000000D6 F3A6                    		repe	cmpsb
+   196 000000D8 7415                    		jz	ff_done		; note that di now is at dirent+11
+   197                                  
+   198                                  ;---		add	ax, 0x20		; next directory entry
+   199                                  ;---		cmp 	ax, [bsBytesPerSec]	; end of sector reached?
+   200 000000DA 83C720                  		add	di, byte 0x20		;XXX
+   201 000000DD 83E7E0                  		and	di, byte -0x20 ; 0xffe0	;XXX
+   202 000000E0 3B7E0B                  		cmp	di, [bsBytesPerSec]	;XXX
+   203 000000E3 75EB                    		jnz	ff_next_entry
+   204                                  
+   205                                  ;---		pop	eax		; restore sector
+   206 000000E5 4A                      		dec 	dx		; next sector in cluster
+   207 000000E6 75E0                    		jnz	ff_next_sector
+   208                                  
+   209 000000E8 6658                    ff_walk_fat:	pop	eax			; restore current cluster
+   210 000000EA E83400                  		call	next_cluster		; find next cluster
+   211 000000ED EBD2                    		jmp	ff_next_clust
+   212                                  
+   213 000000EF 26FF7509                ff_done:	push	word [es:di+0x14-11]	; get cluster number HI
+   214 000000F3 26FF750F                		push	word [es:di+0x1A-11]	; get cluster number LO
+   215 000000F7 6658                    		pop	eax			; convert to 32bit
+   216                                  
+   217 000000F9 29DB                    		sub	bx, bx			; ES points to LOADSEG
+   218                                  						; (kernel -> ES:BX)
+   219                                  
+   220                                  ; -------------
+   221                                  
+   222 000000FB 6650                    read_kernel:	push	eax
+   223 000000FD E85A00                  		call	convert_cluster
+   224 00000100 720D                    		jc	boot_success		; EOC encountered - done
+   225                                  		; EDX is sectors in cluster, EAX is sector
+   226                                  
+   227 00000102 E88000                  rk_in_cluster:	call	readDisk
+   228 00000105 4A                      		dec	dx
+   229 00000106 75FA                    		jnz	rk_in_cluster		; loop over sect. in cluster
+   230                                  
+   231 00000108 6658                    rk_walk_fat:	pop	eax
+   232 0000010A E81400                  		call	next_cluster
+   233 0000010D EBEC                    		jmp	read_kernel
+   234                                  		
+   235                                  ;-----------------------------------------------------------------------
+   236                                  
+   237 0000010F 8A5E40                  boot_success:	mov	bl, [drive]
+   238 00000112 FF6E76                  		jmp	far [loadsegoff_60]
+   239                                  
+   240                                  ;-----------------------------------------------------------------------
+   241                                  
+   242 00000115 BE[EE01]                boot_error:	mov	si, msg_BootError
+   243 00000118 E86400                  		call	print			; modifies AX BX SI
+   244                                  
+   245 0000011B 30E4                    wait_key:	xor	ah,ah
+   246 0000011D CD16                    		int	0x16			; wait for a key
+   247 0000011F CD19                    reboot:		int	0x19			; reboot the machine
+   248                                  
+   249                                  ;-----------------------------------------------------------------------
+   250                                  
+   251                                  ; given a cluster number, find the number of the next cluster in
+   252                                  ; the FAT chain. Needs fat_secshift and fat_start.
+   253                                  ; input:	EAX - cluster
+   254                                  ; output:	EAX - next cluster
+   255                                  
+   256 00000121 06                      next_cluster:	push	es
+   257 00000122 57                      		push	di
+   258 00000123 53                      		push	bx
+   259                                  
+   260 00000124 89C7                    		mov	di, ax
+   261 00000126 C1E702                  		shl	di, 2			; 32bit FAT
+   262                                  
+   263 00000129 50                      		push	ax
+   264 0000012A 8B460B                  		mov	ax, [bsBytesPerSec]
+   265 0000012D 48                      		dec	ax
+   266 0000012E 21C7                    		and	di, ax			; mask to sector size
+   267 00000130 58                      		pop	ax
+   268                                  
+   269 00000131 66C1E807                		shr	eax, 7			; e.g. 9-2 for 512 by/sect.
+   270                                  fat_afterss:	; selfmodifying code: previous byte is patched!
+   271                                  		; (to hold the fat_secshift value)
+   272                                  
+   273 00000135 66034648                		add	eax, [fat_start]	; absolute sector number now
+   274                                  
+   275 00000139 BB0020                  		mov	bx, FATSEG
+   276 0000013C 8EC3                    		mov	es, bx
+   277 0000013E 29DB                    		sub	bx, bx
+   278                                  
+   279 00000140 663B4644                		cmp	eax, [fat_sector]	; already buffered?
+   280 00000144 7407                    		jz	cn_buffered
+   281 00000146 66894644                		mov	[fat_sector],eax	; number of buffered sector
+   282 0000014A E83800                  		call	readDisk
+   283                                  
+   284 0000014D 268065030F              cn_buffered:	and	byte [es:di+3],0x0f	; mask out top 4 bits
+   285 00000152 26668B05                		mov	eax, [es:di]		; read next cluster number
+   286                                  
+   287 00000156 5B                      		pop	bx
+   288 00000157 5F                      		pop 	di
+   289 00000158 07                      		pop	es
+   290 00000159 C3                      		ret
+   291                                  
+   292                                  
+   293                                  ;-----------------------------------------------------------------------
+   294                                  
+   295                                  ; Convert cluster number to the absolute sector number
+   296                                  ; ... or return carry if EndOfChain! Needs data_start.
+   297                                  ; input:	EAX - target cluster
+   298                                  ; output:	EAX - absolute sector
+   299                                  ;		EDX - [bsSectPerClust] (byte)
+   300                                  ;		carry clear
+   301                                  ;		(if carry set, EAX/EDX unchanged, end of chain)
+   302                                  
+   303                                  convert_cluster:
+   304 0000015A 663DF8FFFF0F            		cmp	eax, 0x0ffffff8	; if end of cluster chain...
+   305 00000160 7315                    		jnb	end_of_chain
+   306                                  
+   307                                  		; sector = (cluster-2) * clustersize + data_start
+   308 00000162 6648                    		dec	eax
+   309 00000164 6648                    		dec	eax
+   310                                  
+   311 00000166 660FB6560D              		movzx	edx, byte [bsSecPerClust]
+   312 0000016B 6652                    		push	edx
+   313 0000016D 66F7E2                  		mul	edx
+   314 00000170 665A                    		pop	edx
+   315 00000172 6603464C                		add	eax, [data_start]
+   316                                  		; here, carry is unset (unless parameters are wrong)
+   317 00000176 C3                      		ret
+   318                                  
+   319 00000177 F9                      end_of_chain:	stc			; indicate EOC by carry
+   320 00000178 C3                      		ret
+   321                                  
+   322                                  ;-----------------------------------------------------------------------
+   323                                  
+   324                                  ; PRINT - prints string DS:SI
+   325                                  ; modifies AX BX SI
+   326                                  
+   327 00000179 31DB                    printchar:	xor	bx, bx		; video page 0
+   328 0000017B B40E                    		mov	ah, 0x0e	; print it
+   329 0000017D CD10                    		int	0x10		; via TTY mode
+   330 0000017F AC                      print:		lodsb			; get token
+   331 00000180 3C00                    		cmp	al, 0		; end of string?
+   332 00000182 75F5                    		jne	printchar	; until done
+   333 00000184 C3                      		ret			; return to caller
+   334                                  
+   335                                  ;-----------------------------------------------------------------------
+   336                                  
+   337                                  ; Read a sector from disk, using LBA
+   338                                  ; input:	EAX - 32-bit DOS sector number
+   339                                  ;		ES:BX - destination buffer
+   340                                  ;		(will be filled with 1 sector of data)
+   341                                  ; output:	ES:BX points one byte after the last byte read.
+   342                                  ;		EAX - next sector
+   343                                  
+   344 00000185 52                      readDisk:	push	dx
+   345 00000186 56                      		push	si
+   346 00000187 57                      		push	di
+   347                                  
+   348 00000188 6650                    read_next:	push	eax	; would ax be enough?
+   349 0000018A 89E7                    		mov	di, sp	; remember parameter block end
+   350                                  
+   351                                  ;---		db	0x66	; operand size override (push dword)
+   352 0000018C 6A00                    		push	byte 0	;XXX	; other half of the 32 bits at [C]
+   353                                  				; (did not trust "o32 push byte 0" opcode)
+   354 0000018E 6A00                    		push	byte 0	; [C] sector number high 32bit
+   355 00000190 6650                    		push	eax	; [8] sector number low 32bit
+   356 00000192 06                      		push	es	; [6] buffer segment
+   357 00000193 53                      		push	bx	; [4] buffer offset
+   358 00000194 6A01                    		push	byte 1	; [2] 1 sector (word)
+   359 00000196 6A10                    		push	byte 16	; [0] size of parameter block (word)
+   360 00000198 89E6                    		mov	si, sp
+   361 0000019A 8A5640                  		mov	dl, [drive]
+   362 0000019D B442                    		mov	ah, 42h	; disk read
+   363 0000019F CD13                    		int	0x13	
+   364                                  
+   365 000001A1 89FC                    		mov	sp, di	; remove parameter block from stack
+   366                                  				; (without changing flags!)
+   367 000001A3 6658                    		pop	eax	; would ax be enough?
+   368                                  
+   369 000001A5 7308                    		jnc	read_ok		; jump if no error
+   370                                  
+   371 000001A7 50                      		push	ax			; !!
+   372 000001A8 30E4                    		xor	ah, ah		; else, reset and retry
+   373 000001AA CD13                    		int	0x13
+   374 000001AC 58                      		pop	ax			; !!
+   375 000001AD EBD9                    		jmp	read_next
+   376                                  
+   377 000001AF 6640                    read_ok:	inc 	eax			; next sector
+   378 000001B1 035E0B                  		add	bx, word [bsBytesPerSec]
+   379 000001B4 7307                    		jnc	no_incr_es		; if overflow...
+   380                                  
+   381 000001B6 8CC2                    		mov	dx, es
+   382 000001B8 80C610                  		add	dh, 0x10		; ...add 1000h to ES
+   383 000001BB 8EC2                    		mov	es, dx
+   384                                  
+   385 000001BD 5F                      no_incr_es:	pop	di
+   386 000001BE 5E                      		pop 	si
+   387 000001BF 5A                      		pop	dx
+   388 000001C0 C3                      		ret
+   389                                  
+   390                                  ;-----------------------------------------------------------------------
+   391                                  
+   392 000001C1 4C6F6164696E672046-     msg_LoadFreeDOS db "Loading FreeDOS ",0
+   393 000001CA 726565444F532000   
+   394                                  
+   395 000001D2 00<rept>                       times 0x01ee-$+$$ db 0
+   396                                  
+   397 000001EE 4E6F20                  msg_BootError	db "No "
+   398                                  		; currently, only "kernel.sys not found" gives a message,
+   399                                  		; but read errors in data or root or fat sectors do not.
+   400                                  
+   401 000001F1 4B45524E454C202053-     filename	db "KERNEL  SYS"
+   402 000001FA 5953               
+   403                                  
+   404 000001FC 000055AA                sign		dw 0, 0xAA55
+   405                                  		; Win9x uses all 4 bytes as magic value here.

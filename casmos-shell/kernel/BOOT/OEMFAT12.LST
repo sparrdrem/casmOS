@@ -1,0 +1,650 @@
+     1                                  ;
+     2                                  ; File:
+     3                                  ;                          oemboot.asm
+     4                                  ;                      2004, Kenneth J. Davis
+     5                                  ;                Copyright (c) 200?, <add name here>
+     6                                  ; Description:
+     7                                  ; OEM boot sector for FreeDOS compatible with IBM's (R) PC-DOS,
+     8                                  ; and Microsoft's (R) MS-DOS.  It may work with older OpenDOS/DR-DOS,
+     9                                  ; although the standard FreeDOS boot sector is needed with ver 7+
+    10                                  ; releases.  May work with other versions of DOS that use
+    11                                  ; IBMBIO.COM/IBMDOS.COM pair.  This boot sector loads only up
+    12                                  ; to 58 sectors (29KB) of the kernel (IBMBIO.COM) to 0x70:0 then
+    13                                  ; jumps to it.  As best I can tell, PC-DOS (and MS-DOS up to version
+    14                                  ; 6.xx behaves similar) expects on entry for:
+    15                                  ; ch = media id byte in the boot sector
+    16                                  ; dl = BIOS drive booted from (0x00=A:, 0x80=C:, ...)
+    17                                  ; ax:bx = the starting (LBA) sector of cluster 2 (ie the 1st
+    18                                  ; data sector, which is 0x0000:0021 for FAT12)
+    19                                  ; ?note? IBMBIO.COM/IO.SYS may use ax:bx and cluster # stored
+    20                                  ; elsewhere (perhaps dir entry still at 0x50:0) to determine
+    21                                  ; starting sector for full loading of kernel file.
+    22                                  ; it also expects the boot sector (in particular the BPB)
+    23                                  ; to still be at 0x0:7C00, the directory entry for IBMBIO.COM
+    24                                  ; (generally first entry of first sector of the root directory)
+    25                                  ; at 0x50:0 (DOS Data Area).  The original boot sector may update
+    26                                  ; the floppy disk parameter table (int 1Eh), but we don't so
+    27                                  ; may fail for any systems where the changes (???) are needed.
+    28                                  ; If the above conditions are not met, then IBMBIO.COM will
+    29                                  ; print the not a bootable disk error message.
+    30                                  ;
+    31                                  ; For MS-DOS >= 7 (ie Win9x DOS) the following conditions
+    32                                  ; must be met:
+    33                                  ; bp = 0x7C00, ie offset boot sector loaded at
+    34                                  ; [bp-4] = the starting (LBA) sector of cluster 2 (ie the 1st
+    35                                  ; data sector [this is the same as ax:bx for earlier versions
+    36                                  ; and dx:ax in Win9x boot sector]
+    37                                  ; The starting cluster of the kernel file is stored in
+    38                                  ; di for FAT 12/16 (where si is a don't care) and si:di
+    39                                  ; for FAT 32.
+    40                                  ; The values for ax,bx,cx,dx,ds and the stack do not
+    41                                  ; seem to be important (used by IO.SYS) and so may be any value
+    42                                  ; (though dx:ax=[data_start], cx=0, bx=0x0f00 on FAT12 or
+    43                                  ; 0x0700 on FAT32, ds=0, ss:sp=0:7b??)
+    44                                  
+    45                                  ; the boot time stack may store the original int1E floppy
+    46                                  ; parameter table, otherwise nothing else important seems
+    47                                  ; stored there and I am unsure if even this value is used
+    48                                  ; beyond boot sector code.
+    49                                  
+    50                                  ;
+    51                                  ; This boot sector only supports FAT12/FAT16 as PC-DOS
+    52                                  ; does not support FAT32 and newer FAT32 capable DOSes
+    53                                  ; probably have different boot requirements; also do NOT
+    54                                  ; use it to boot the FreeDOS kernel as it expects to be
+    55                                  ; fully loaded by boot sector (> 29KB & usually to 0x60:0).
+    56                                  ;
+    57                                  ; WARNING: PC-DOS has additional requirements, in particular,
+    58                                  ; it may expect that IBMBIO.COM and IBMDOS.COM be the 1st
+    59                                  ; two entries in the root directory (even before the label)
+    60                                  ; and that they occupy the 1st consecutive data sectors.
+    61                                  ; Newer releases may support other positions, but still
+    62                                  ; generally should occupy consecutive sectors. These conditions
+    63                                  ; can usually be met by running sys on a freshly formatted
+    64                                  ; and un-label'd disk.
+    65                                  ;
+    66                                  ;
+    67                                  ; Derived From:
+    68                                  ;                            boot.asm
+    69                                  ;                           DOS-C boot
+    70                                  ;
+    71                                  ;                   Copyright (c) 1997, 2000-2004
+    72                                  ;               Svante Frey, Jim Hall, Jim Tabor, Bart Oldeman,
+    73                                  ;             Tom Ehlert, Eric Auer, Luchezar Georgiev, Jon Gentle
+    74                                  ;             and Michal H. Tyc (DR-DOS adaptation, boot26dr.asm)
+    75                                  ;                      All Rights Reserved
+    76                                  ;
+    77                                  ; This file is part of FreeDOS.
+    78                                  ;
+    79                                  ; DOS-C is free software; you can redistribute it and/or
+    80                                  ; modify it under the terms of the GNU General Public License
+    81                                  ; as published by the Free Software Foundation; either version
+    82                                  ; 2, or (at your option) any later version.
+    83                                  ;
+    84                                  ; DOS-C is distributed in the hope that it will be useful, but
+    85                                  ; WITHOUT ANY WARRANTY; without even the implied warranty of
+    86                                  ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See
+    87                                  ; the GNU General Public License for more details.
+    88                                  ;
+    89                                  ; You should have received a copy of the GNU General Public
+    90                                  ; License along with DOS-C; see the file COPYING.  If not,
+    91                                  ; write to the Free Software Foundation, 675 Mass Ave,
+    92                                  ; Cambridge, MA 02139, USA.
+    93                                  ;
+    94                                  ;
+    95                                  ;	+--------+
+    96                                  ;	| CLUSTER|
+    97                                  ;	|  LIST  |
+    98                                  ;	|--------| 0000:7F00
+    99                                  ;	|LBA PKT |
+   100                                  ;	|--------| 0000:7E00  (0:BP+200)
+   101                                  ;	|BOOT SEC| contains BPB
+   102                                  ;	|ORIGIN  | 
+   103                                  ;	|--------| 0000:7C00  (0:BP)
+   104                                  ;	|VARS    | only known is 1st data sector (start of cluster 2)
+   105                                  ;	|--------| 0000:7BFC  (DS:[BP-4])
+   106                                  ;	|STACK   | minimal 256 bytes (1/2 sector)
+   107                                  ;	|- - - - |
+   108                                  ;	|KERNEL  | kernel loaded here (max 58 sectors, 29KB)
+   109                                  ;	|LOADED  | also used as FAT buffer
+   110                                  ;	|--------| 0070:0000 (0:0700)
+   111                                  ;	|DOS DA/ | DOS Data Area,
+   112                                  ;	|ROOT DIR| during boot contains directory entries
+   113                                  ;	|--------| 0000:0500
+   114                                  ;	|BDA     | BIOS Data Area
+   115                                  ;	+--------+ 0000:0400
+   116                                  ;	|IVT     | Interrupt Vector Table
+   117                                  ;	+--------+ 0000:0000
+   118                                  
+   119                                  CPU 8086  ; enable assembler warnings to limit instruction set
+   120                                  
+   121                                  ;%define ISFAT12         1              ; only 1 of these should be set,
+   122                                  ;%define ISFAT16         1              ; defines which FAT is supported
+   123                                  
+   124                                  %define TRYLBAREAD       1              ; undefine to use only CHS int 13h
+   125                                  %define SETROOTDIR       1              ; if defined dir entry copied to 0:500
+   126                                  %define LOOPONERR        1              ; if defined on error simply loop forever
+   127                                  ;%define RETRYALWAYS     1              ; if defined retries read forever
+   128                                  ;%define WINBOOT         1              ; use win9x kernel calling conventions (name & jmp addr)
+   129                                  ;%define MSCOMPAT        1              ; sets default filename to MSDOS IO.SYS
+   130                                  
+   131                                  %ifdef WINBOOT                          ; if set also change from PC-DOS to 
+   132                                  %ifndef MSCOMPAT                        ; kernel name to MS-DOS kernel name
+   133                                  %define MSCOMPAT
+   134                                  %endif
+   135                                  %endif
+   136                                  
+   137                                  segment	.text
+   138                                  
+   139                                  %define BASE            0x7c00          ; boot sector originally at 0x0:BASE
+   140                                  %define LOADSEG         0x0070          ; segment to load kernel at LOADSEG:0
+   141                                  %define LOADEND         0x07b0          ; limit reads to below this segment
+   142                                                                          ; LOADSEG+29KB, else data overwritten
+   143                                  
+   144                                  %define FATBUF          bp-0x7500       ; offset of temporary buffer for FAT
+   145                                                                          ; chain 0:FATBUF = 0:0700 = LOADSEG:0
+   146                                  %define ROOTDIR         bp-0x7700       ; offset to buffer for root directory
+   147                                                                          ; entry of kernel 0:ROOTDIR
+   148                                  %define CLUSTLIST       bp+0x0300       ; zero terminated list of clusters
+   149                                                                          ; that the kernel occupies
+   150                                  
+   151                                  ;       Some extra variables
+   152                                  ; using bp-Entry+variable_name generates smaller code than using just
+   153                                  ; variable_name, where bp is initialized to Entry, so bp-Entry equals 0
+   154                                  
+   155                                  %define LBA_PACKET      bp+0x0200            ; immediately after boot sector
+   156                                  %define LBA_SIZE        word [LBA_PACKET]    ; size of packet, should be 10h
+   157                                  %define LBA_SECNUM      word [LBA_PACKET+2]  ; number of sectors to read
+   158                                  %define LBA_OFF         LBA_PACKET+4         ; buffer to read/write to
+   159                                  %define LBA_SEG         LBA_PACKET+6
+   160                                  %define LBA_SECTOR_0    word [LBA_PACKET+8 ] ; LBA starting sector #
+   161                                  %define LBA_SECTOR_16   word [LBA_PACKET+10]
+   162                                  %define LBA_SECTOR_32   word [LBA_PACKET+12]
+   163                                  %define LBA_SECTOR_48   word [LBA_PACKET+14]
+   164                                  
+   165                                  %define PARAMS LBA_PACKET+0x10
+   166                                  ;%define RootDirSecs      PARAMS+0x0        ; # of sectors root dir uses
+   167                                  %define fat_start        PARAMS+0x2         ; first FAT sector
+   168                                  ;%define root_dir_start   PARAMS+0x6        ; first root directory sector
+   169                                  %define first_cluster    PARAMS+0x0a        ; starting cluster of kernel file
+   170                                  %define data_start       bp-4               ; first data sector (win9x expects here)
+   171                                  
+   172                                  ;-----------------------------------------------------------------------
+   173                                  
+   174                                  
+   175                                                  org     BASE
+   176                                  
+   177 00000000 EB3C                    Entry:          jmp     short real_start
+   178 00000002 90                                      nop
+   179                                  
+   180                                  ;       bp is initialized to 7c00h
+   181                                  %define bsOemName       bp+0x03      ; OEM label
+   182                                  %define bsBytesPerSec   bp+0x0b      ; bytes/sector
+   183                                  %define bsSecPerClust   bp+0x0d      ; sectors/allocation unit
+   184                                  %define bsResSectors    bp+0x0e      ; # reserved sectors
+   185                                  %define bsFATs          bp+0x10      ; # of fats
+   186                                  %define bsRootDirEnts   bp+0x11      ; # of root dir entries
+   187                                  %define bsSectors       bp+0x13      ; # sectors total in image
+   188                                  %define bsMedia         bp+0x15      ; media descrip: fd=2side9sec, etc...
+   189                                  %define sectPerFat      bp+0x16      ; # sectors in a fat
+   190                                  %define sectPerTrack    bp+0x18      ; # sectors/track
+   191                                  %define nHeads          bp+0x1a      ; # heads
+   192                                  %define nHidden         bp+0x1c      ; # hidden sectors
+   193                                  %define nSectorHuge     bp+0x20      ; # sectors if > 65536
+   194                                  %define drive           bp+0x24      ; drive number
+   195                                  %define extBoot         bp+0x26      ; extended boot signature
+   196                                  %define volid           bp+0x27
+   197                                  %define vollabel        bp+0x2b
+   198                                  %define filesys         bp+0x36
+   199                                  
+   200                                  
+   201                                  ;-----------------------------------------------------------------------
+   202                                  
+   203                                  ;               times   0x3E-$+$$ db 0
+   204                                  ;
+   205                                  ;       Instead of zero-fill,
+   206                                  ;       initialize BPB with values suitable for a 1440 K floppy
+   207                                  ;
+   208 00000003 49424D2020352E30                        db 'IBM  5.0'   ; OEM label
+   209 0000000B 0002                                    dw 512          ; bytes per sector
+   210 0000000D 01                                      db 1            ; sectors per cluster
+   211 0000000E 0100                                    dw 1            ; reserved sectors
+   212 00000010 02                                      db 2            ; number of FATs
+   213 00000011 E000                                    dw 224          ; root directory entries
+   214 00000013 400B                                    dw 80 * 36      ; total sectors on disk
+   215 00000015 F0                                      db 0xF0         ; media descriptor
+   216 00000016 0900                                    dw 9            ; sectors per 1 FAT copy
+   217 00000018 1200                                    dw 18           ; sectors per track
+   218 0000001A 0200                                    dw 2            ; number of heads
+   219 0000001C 00000000                                dd 0            ; hidden sectors
+   220 00000020 00000000                                dd 0            ; big total sectors
+   221 00000024 00                                      db 0            ; boot unit
+   222 00000025 00                                      db 0            ; reserved
+   223 00000026 29                                      db 0x29         ; extended boot record id
+   224 00000027 78563412                                dd 0x12345678   ; volume serial number
+   225 0000002B 4E4F204E414D452020-                     db 'NO NAME    '; volume label
+   226 00000034 2020               
+   227 00000036 4641543132202020                        db 'FAT12   '   ; filesystem id
+   228                                  
+   229                                  ;-----------------------------------------------------------------------
+   230                                  ;   ENTRY
+   231                                  ;-----------------------------------------------------------------------
+   232                                  
+   233                                  real_start:
+   234 0000003E FA                                      cli             ; disable interrupts until stack ready
+   235 0000003F FC                                      cld             ; all string operations increment
+   236 00000040 31C0                                    xor     ax, ax  ; ensure our segment registers ready
+   237 00000042 8ED8                                    mov     ds, ax  ; cs=ds=es=ss=0x0000
+   238 00000044 8EC0                                    mov     es, ax
+   239 00000046 8ED0                                    mov     ss, ax
+   240 00000048 BD007C                                  mov     bp, BASE
+   241 0000004B 8D66FC                                  lea     sp, [bp-4] ; for DOS <7 this may be [bp]
+   242                                  
+   243                                  ;       For compatibility, diskette parameter vector updated.
+   244                                  ;               lea     di  [bp+0x3E] ; use 7c3e([bp+3e]) for PC-DOS,
+   245                                  ;               ;lea     di  [bp]     ; but 7c00([bp]) for DR-DOS 7 bug
+   246                                  ;               mov     bx, 4 * 1eh   ; stored at int 1E's vector
+   247                                  ;               lds     si, [bx]      ; fetch current int 1eh pointer
+   248                                  ;               push    ds            ; store original 1eh pointer at stack top
+   249                                  ;               push    si            ; so can restore later if needed
+   250                                  ;
+   251                                  ;       Copy table to new location
+   252                                  ;               mov     cl, 11        ; the parameter table is 11 bytes
+   253                                  ;               rep     movsb         ; and copy the parameter block
+   254                                  ;               mov     ds, ax        ; restore DS
+   255                                  ;
+   256                                  ;       Note: make desired changes to table here
+   257                                  ;
+   258                                  ;       Update int1E to new location
+   259                                  ;               mov     [bx+2], 0     ; set to 0:bp or 0:bp+3e as appropriate
+   260                                  ;               mov     word [bx], 0x7c3e ; (use 0x7c00 for DR-DOS)
+   261                                  
+   262 0000004E FB                                      sti             ; enable interrupts
+   263                                  
+   264                                  ;       If updated floppy parameter table then must notify BIOS
+   265                                  ;       Otherwise a reset should not be needed here.
+   266                                  ;               int     0x13    ; reset drive (AX=0)
+   267                                  
+   268                                  ;
+   269                                  ; Note: some BIOS implementations may not correctly pass drive number
+   270                                  ; in DL, however we work around this in SYS.COM by NOP'ing out the use of DL
+   271                                  ; (formerly we checked for [drive]==0xff; update sys.c if code moves)
+   272                                  ;
+   273 0000004F 885624                                  mov     [drive], dl        ; rely on BIOS drive number in DL
+   274                                  
+   275                                  
+   276                                  ;       GETDRIVEPARMS:  Calculate start of some disk areas.
+   277                                  ;
+   278 00000052 8B761C                                  mov     si, word [nHidden]
+   279 00000055 8B7E1E                                  mov     di, word [nHidden+2]
+   280 00000058 03760E                                  add     si, word [bsResSectors]
+   281 0000005B 83D700                                  adc     di, byte 0              ; DI:SI = first FAT sector
+   282                                  
+   283 0000005E 89B61202                                mov     word [fat_start], si
+   284 00000062 89BE1402                                mov     word [fat_start+2], di
+   285                                  
+   286 00000066 8A4610                                  mov     al, [bsFATs]
+   287 00000069 98                                      cbw
+   288 0000006A F76616                                  mul     word [sectPerFat]       ; DX:AX = total number of FAT sectors
+   289                                  
+   290 0000006D 01C6                                    add     si, ax
+   291 0000006F 11D7                                    adc     di, dx                  ; DI:SI = first root directory sector
+   292 00000071 57                                      push di                         ; mov word [root_dir_start+2], di
+   293 00000072 56                                      push si                         ; mov word [root_dir_start], si
+   294                                  
+   295                                                  ; Calculate how many sectors the root directory occupies.
+   296 00000073 8B5E0B                                  mov     bx, [bsBytesPerSec]
+   297 00000076 B105                                    mov     cl, 5                   ; divide BX by 32
+   298 00000078 D3EB                                    shr     bx, cl                  ; BX = directory entries per sector
+   299                                  
+   300 0000007A 8B4611                                  mov     ax, [bsRootDirEnts]
+   301 0000007D 31D2                                    xor     dx, dx
+   302 0000007F F7F3                                    div     bx                      ; set AX = sectors per root directory
+   303 00000081 50                                      push    ax                      ; mov word [RootDirSecs], ax
+   304                                  
+   305 00000082 01C6                                    add     si, ax
+   306 00000084 83D700                                  adc     di, byte 0              ; DI:SI = first data sector
+   307                                  
+   308 00000087 8976FC                                  mov     [data_start], si
+   309 0000008A 897EFE                                  mov     [data_start+2], di
+   310                                  
+   311                                  
+   312                                  ;       FINDFILE: Searches for the file in the root directory.
+   313                                  ;
+   314                                  ;       Returns:
+   315                                  ;                               AX = first cluster of file
+   316                                  
+   317                                                  ; First, read the root directory into buffer.
+   318                                                  ; into the temporary buffer. (max 29KB or overruns stuff)
+   319                                  
+   320 0000008D 5F                                      pop     di              ; mov di, word [RootDirSecs]
+   321 0000008E 58                                      pop     ax              ; mov ax, word [root_dir_start]
+   322 0000008F 5A                                      pop     dx              ; mov dx, word [root_dir_start+2]
+   323 00000090 8D9E0089                                lea     bx, [ROOTDIR]   ; es:bx = 0:0500
+   324 00000094 06                                      push    es              ; save pointer to ROOTDIR
+   325 00000095 E8B200                                  call    readDisk
+   326 00000098 07                                      pop     es              ; restore pointer to ROOTDIR
+   327 00000099 8DB60089                                lea     si, [ROOTDIR]   ; ds:si = 0:0500
+   328                                  
+   329                                  
+   330                                  		; Search for kernel file name, and find start cluster.
+   331                                  
+   332 0000009D B90B00                  next_entry:     mov     cx, 11
+   333 000000A0 BF[F101]                                mov     di, filename
+   334 000000A3 56                                      push    si
+   335 000000A4 F3A6                                    repe    cmpsb
+   336 000000A6 5E                                      pop     si
+   337 000000A7 8B441A                                  mov     ax, [si+0x1A]; get cluster number from directory entry
+   338 000000AA 740A                                    je      ffDone
+   339                                  
+   340 000000AC 83C620                                  add     si, byte 0x20   ; go to next directory entry
+   341 000000AF 726F                                    jc      boot_error      ; fail if not found and si wraps
+   342 000000B1 803C00                                  cmp     byte [si], 0    ; if the first byte of the name is 0,
+   343 000000B4 75E7                                    jnz     next_entry      ; there are no more files in the directory
+   344                                  
+   345                                  ffDone:
+   346 000000B6 89861A02                                mov [first_cluster], ax ; store first cluster number
+   347                                  
+   348                                  %ifdef SETROOTDIR
+   349                                                  ; copy over this portion of root dir to 0x0:500 for PC-DOS
+   350                                                  ; (this may allow IBMBIO.COM to start in any directory entry)
+   351 000000BA 8DBE0089                                lea     di, [ROOTDIR]   ; es:di = 0:0500
+   352 000000BE B92000                                  mov     cx, 32          ; limit to this 1 entry (rest don't matter)
+   353 000000C1 F3A5                                    rep     movsw
+   354                                  %endif
+   355                                  
+   356                                  ;       GETFATCHAIN:
+   357                                  ;
+   358                                  ;       Reads the FAT chain and stores it in a temporary buffer in the first
+   359                                  ;       64 kb.  The FAT chain is stored an array of 16-bit cluster numbers,
+   360                                  ;       ending with 0.
+   361                                  ;
+   362                                  ;       The file must fit in conventional memory, so it can't be larger than
+   363                                  ;       640 kb. The sector size must be at least 512 bytes, so the FAT chain
+   364                                  ;       can't be larger than 2.5 KB (655360 / 512 * 2 = 2560).
+   365                                  ;
+   366                                  ;       Call with:      AX = first cluster in chain
+   367                                  
+   368                                                  ; Load the complete FAT into memory. The FAT can't be larger
+   369                                                  ; than 128 kb
+   370 000000C3 8D9E008B                                lea     bx, [FATBUF]            ; es:bx = 0:0700
+   371 000000C7 8B7E16                                  mov     di, [sectPerFat]
+   372 000000CA 8B861202                                mov     ax, word [fat_start]
+   373 000000CE 8B961402                                mov     dx, word [fat_start+2]
+   374 000000D2 E87500                                  call    readDisk
+   375                                  
+   376                                                  ; Set ES:DI to the temporary storage for the FAT chain.
+   377 000000D5 1E                                      push    ds
+   378 000000D6 07                                      pop     es
+   379 000000D7 8DBE0003                                lea     di, [CLUSTLIST]
+   380                                                  ; Set DS:0 to FAT data we loaded
+   381 000000DB B87000                                  mov     ax, LOADSEG
+   382 000000DE 8ED8                                    mov     ds, ax                  ; ds:0 = 0x70:0 = 0:FATBUF
+   383                                  
+   384 000000E0 8B861A02                                mov ax, [first_cluster]         ; restore first cluster number
+   385 000000E4 1E                                      push    ds                      ; store LOADSEG
+   386                                  
+   387 000000E5 AB                      next_clust:     stosw                           ; store cluster number
+   388 000000E6 89C6                                    mov     si, ax                  ; SI = cluster number
+   389                                  
+   390                                  %ifdef ISFAT12
+   391                                                  ; This is a FAT-12 disk.
+   392                                  
+   393 000000E8 01F6                    fat_12:         add     si, si          ; multiply cluster number by 3...
+   394 000000EA 01C6                                    add     si, ax
+   395 000000EC D1EE                                    shr     si, 1           ; ...and divide by 2
+   396 000000EE AD                                      lodsw
+   397                                  
+   398                                                  ; If the cluster number was even, the cluster value is now in
+   399                                                  ; bits 0-11 of AX. If the cluster number was odd, the cluster
+   400                                                  ; value is in bits 4-15, and must be shifted right 4 bits. If
+   401                                                  ; the number was odd, CF was set in the last shift instruction.
+   402                                  
+   403 000000EF 7304                                    jnc     fat_even
+   404 000000F1 B104                                    mov     cl, 4
+   405 000000F3 D3E8                                    shr     ax, cl
+   406                                  
+   407 000000F5 80E40F                  fat_even:       and     ah, 0x0f        ; mask off the highest 4 bits
+   408 000000F8 3DF80F                                  cmp     ax, 0x0ff8      ; check for EOF
+   409 000000FB 72E8                                    jb      next_clust      ; continue if not EOF
+   410                                  
+   411                                  %endif
+   412                                  %ifdef ISFAT16
+   413                                                  ; This is a FAT-16 disk. The maximal size of a 16-bit FAT
+   414                                                  ; is 128 kb, so it may not fit within a single 64 kb segment.
+   415                                  
+   416                                  fat_16:         mov     dx, LOADSEG
+   417                                                  add     si, si          ; multiply cluster number by two
+   418                                                  jnc     first_half      ; if overflow...
+   419                                                  add     dh, 0x10        ; ...add 64 kb to segment value
+   420                                  
+   421                                  first_half:     mov     ds, dx          ; DS:SI = pointer to next cluster
+   422                                                  lodsw                   ; AX = next cluster
+   423                                  
+   424                                                  cmp     ax, 0xfff8      ; >= FFF8 = 16-bit EOF
+   425                                                  jb      next_clust      ; continue if not EOF
+   426                                  %endif
+   427                                  
+   428                                  finished:       ; Mark end of FAT chain with 0, so we have a single
+   429                                                  ; EOF marker for both FAT-12 and FAT-16 systems.
+   430                                  
+   431 000000FD 31C0                                    xor     ax, ax
+   432 000000FF AB                                      stosw
+   433                                  
+   434 00000100 0E                                      push    cs
+   435 00000101 1F                                      pop     ds
+   436                                  
+   437                                  
+   438                                  ;       loadFile: Loads the file into memory, one cluster at a time.
+   439                                  
+   440 00000102 07                                      pop     es              ; set ES:BX to load address 70:0
+   441 00000103 31DB                                    xor     bx, bx
+   442                                  
+   443 00000105 8DB60003                                lea     si, [CLUSTLIST] ; set DS:SI to the FAT chain
+   444                                  
+   445 00000109 AD                      cluster_next:   lodsw                   ; AX = next cluster to read
+   446 0000010A 09C0                                    or      ax, ax          ; EOF?
+   447 0000010C 751A                                    jne     load_next       ; no, continue
+   448                                  
+   449                                                                          ; dl set to drive by readDisk
+   450 0000010E 8A6E15                                  mov ch, [bsMedia]       ; ch set to media id
+   451 00000111 8B46FE                                  mov ax, [data_start+2]  ; ax:bx set to 1st data sector
+   452 00000114 8B5EFC                                  mov bx, [data_start]    ;
+   453 00000117 8BBE1A02                                mov di, [first_cluster] ; set di (si:di on FAT32) to starting cluster #
+   454                                  %ifdef WINBOOT
+   455                                                  jmp     LOADSEG:0x0200  ; yes, pass control to kernel
+   456                                  %else                
+   457 0000011B EA00007000                              jmp     LOADSEG:0000    ; yes, pass control to kernel
+   458                                  %endif
+   459                                  
+   460                                  
+   461                                  ; failed to boot
+   462                                  boot_error:     
+   463 00000120 E81B00                  call            show
+   464                                  ;               db      "Error! Hit a key to reboot."
+   465 00000123 293A2E                                  db      "):."
+   466                                  %ifdef LOOPONERR
+   467 00000126 EBFE                    jmp $
+   468                                  %else
+   469                                  
+   470                                                  ; Note: should restore floppy paramater table address at int 0x1E
+   471                                                  xor     ah,ah
+   472                                                  int     0x13                    ; reset floppy
+   473                                                  int     0x16                    ; wait for a key
+   474                                                  int     0x19                    ; reboot the machine
+   475                                  %endif
+   476                                  
+   477                                  
+   478 00000128 48                      load_next:      dec     ax                      ; cluster numbers start with 2
+   479 00000129 48                                      dec     ax
+   480                                  
+   481 0000012A 8B7E0D                                  mov     di, word [bsSecPerClust]
+   482 0000012D 81E7FF00                                and     di, 0xff                ; DI = sectors per cluster
+   483 00000131 F7E7                                    mul     di
+   484 00000133 0346FC                                  add     ax, [data_start]
+   485 00000136 1356FE                                  adc     dx, [data_start+2]      ; DX:AX = first sector to read
+   486 00000139 E80E00                                  call    readDisk
+   487 0000013C EBCB                                    jmp     short cluster_next
+   488                                  
+   489                                  
+   490                                  ; shows text after the call to this function.
+   491                                  
+   492 0000013E 5E                      show:           pop     si
+   493 0000013F AC                                      lodsb                           ; get character
+   494 00000140 56                                      push    si                      ; stack up potential return address
+   495 00000141 B40E                                    mov     ah,0x0E                 ; show character
+   496 00000143 CD10                                    int     0x10                    ; via "TTY" mode
+   497 00000145 3C2E                                    cmp     al,'.'                  ; end of string?
+   498 00000147 75F5                                    jne     show                    ; until done
+   499 00000149 C3                                      ret
+   500                                  
+   501                                  
+   502                                  ;       readDisk:       Reads a number of sectors into memory.
+   503                                  ;
+   504                                  ;       Call with:      DX:AX = 32-bit DOS sector number
+   505                                  ;                       DI = number of sectors to read
+   506                                  ;                       ES:BX = destination buffer
+   507                                  ;
+   508                                  ;       Returns:        CF set on error
+   509                                  ;                       ES:BX points one byte after the last byte read.
+   510                                  ;                       Exits early if LBA_SEG == LOADEND.
+   511                                  
+   512 0000014A 56                      readDisk:       push    si                      ; preserve cluster #
+   513                                  
+   514 0000014B 89860802                                mov     LBA_SECTOR_0,ax
+   515 0000014F 89960A02                                mov     LBA_SECTOR_16,dx
+   516 00000153 8C860602                                mov     word [LBA_SEG], es
+   517 00000157 899E0402                                mov     word [LBA_OFF], bx
+   518                                  
+   519 0000015B E8E0FF                                  call    show
+   520 0000015E 2E                                      db      "."
+   521                                  read_next:
+   522                                  
+   523                                  ; initialize constants
+   524 0000015F C78600021000                            mov     LBA_SIZE, 10h           ; LBA packet is 16 bytes
+   525 00000165 C78602020100                            mov     LBA_SECNUM,1            ; reset LBA count if error
+   526                                  
+   527                                  ; limit kernel loading to 29KB, preventing stack & boot sector being overwritten
+   528 0000016B 81BE0602B007                            cmp     word [LBA_SEG], LOADEND ; skip reading if past the end
+   529 00000171 7476                                    je      read_skip               ; of kernel file buffer
+   530                                  
+   531                                  ;******************** LBA_READ *******************************
+   532                                  
+   533                                  						; check for LBA support
+   534                                  										
+   535                                  %ifdef TRYLBAREAD
+   536 00000173 B441                                    mov     ah,041h                 ;
+   537 00000175 BBAA55                                  mov     bx,055aah               ;
+   538 00000178 8A5624                                  mov     dl, [drive]             ; BIOS drive, 0=A:, 80=C:
+   539 0000017B 84D2                                    test    dl,dl                   ; don't use LBA addressing on A:
+   540 0000017D 741C                                    jz      read_normal_BIOS        ; might be a (buggy)
+   541                                                                                  ; CDROM-BOOT floppy emulation
+   542 0000017F CD13                                    int     0x13
+   543 00000181 7218                                    jc	read_normal_BIOS
+   544                                  
+   545 00000183 D1E9                                    shr     cx,1                    ; CX must have 1 bit set
+   546                                  
+   547 00000185 81DB54AA                                sbb     bx,0aa55h - 1           ; tests for carry (from shr) too!
+   548 00000189 7510                                    jne     read_normal_BIOS
+   549                                                                                  ; OK, drive seems to support LBA addressing
+   550 0000018B 8DB60002                                lea     si,[LBA_PACKET]
+   551                                                                                  ; setup LBA disk block
+   552 0000018F 899E0C02                                mov     LBA_SECTOR_32,bx        ; bx is 0 if extended 13h mode supported
+   553 00000193 899E0E02                                mov     LBA_SECTOR_48,bx
+   554                                  	
+   555                                  
+   556 00000197 B442                                    mov     ah,042h
+   557 00000199 EB29                                    jmp short    do_int13_read
+   558                                  %endif
+   559                                  
+   560                                  							
+   561                                  
+   562                                  read_normal_BIOS:      
+   563                                  
+   564                                  ;******************** END OF LBA_READ ************************
+   565 0000019B 8B8E0802                                mov     cx, LBA_SECTOR_0
+   566 0000019F 8B960A02                                mov     dx, LBA_SECTOR_16
+   567                                  
+   568                                                  ;
+   569                                                  ; translate sector number to BIOS parameters
+   570                                                  ;
+   571                                                  ;
+   572                                                  ; abs = sector                          offset in track
+   573                                                  ;     + head * sectPerTrack             offset in cylinder
+   574                                                  ;     + track * sectPerTrack * nHeads   offset in platter
+   575                                                  ;
+   576 000001A3 8A4618                                  mov     al, [sectPerTrack]
+   577 000001A6 F6661A                                  mul     byte [nHeads]
+   578 000001A9 91                                      xchg    ax, cx
+   579                                                  ; cx = nHeads * sectPerTrack <= 255*63
+   580                                                  ; dx:ax = abs
+   581 000001AA F7F1                                    div     cx
+   582                                                  ; ax = track, dx = sector + head * sectPertrack
+   583 000001AC 92                                      xchg    ax, dx
+   584                                                  ; dx = track, ax = sector + head * sectPertrack
+   585 000001AD F67618                                  div     byte [sectPerTrack]
+   586                                                  ; dx =  track, al = head, ah = sector
+   587 000001B0 89D1                                    mov     cx, dx
+   588                                                  ; cx =  track, al = head, ah = sector
+   589                                  
+   590                                                  ; the following manipulations are necessary in order to
+   591                                                  ; properly place parameters into registers.
+   592                                                  ; ch = cylinder number low 8 bits
+   593                                                  ; cl = 7-6: cylinder high two bits
+   594                                                  ;      5-0: sector
+   595 000001B2 88C6                                    mov     dh, al                  ; save head into dh for bios
+   596 000001B4 86E9                                    xchg    ch, cl                  ; set cyl no low 8 bits
+   597 000001B6 D0C9                                    ror     cl, 1                   ; move track high bits into
+   598 000001B8 D0C9                                    ror     cl, 1                   ; bits 7-6 (assumes top = 0)
+   599 000001BA 08E1                                    or      cl, ah                  ; merge sector into cylinder
+   600 000001BC 41                                      inc     cx                      ; make sector 1-based (1-63)
+   601                                  
+   602 000001BD C49E0402                                les     bx,[LBA_OFF]
+   603 000001C1 B80102                                  mov     ax, 0x0201
+   604                                  do_int13_read:                
+   605 000001C4 8A5624                                  mov     dl, [drive]
+   606 000001C7 CD13                                    int     0x13
+   607                                  
+   608                                  read_finished:
+   609                                  %ifdef RETRYALWAYS
+   610                                                  jnc     read_ok                 ; jump if no error
+   611                                                  xor     ah, ah                  ; else, reset floppy
+   612                                                  int     0x13
+   613                                  read_next_chained:
+   614                                                  jmp     short read_next         ; read the same sector again
+   615                                  %else
+   616 000001C9 7303E952FF                              jc      boot_error              ; exit on error
+   617                                  %endif
+   618                                  
+   619                                  read_ok:
+   620 000001CE 8B460B                                  mov     ax, word [bsBytesPerSec]  
+   621 000001D1 B104                                    mov     cl, 4                   ; adjust segment pointer by increasing
+   622 000001D3 D3E8                                    shr     ax, cl
+   623 000001D5 01860602                                add     word [LBA_SEG], ax      ; by paragraphs read in (per sector)
+   624                                  
+   625 000001D9 8386080201                              add     LBA_SECTOR_0,  byte 1
+   626 000001DE 83960A0200                              adc     LBA_SECTOR_16, byte 0   ; DX:AX = next sector to read
+   627 000001E3 4F                                      dec     di                      ; if there is anything left to read,
+   628                                  %ifdef RETRYALWAYS
+   629                                                  jnz     read_next_chained       ; continue
+   630                                  %else
+   631 000001E4 7403E976FF                              jnz     read_next               ; continue
+   632                                  %endif
+   633                                  
+   634                                  read_skip:
+   635 000001E9 8E860602                                mov     es, word [LBA_SEG]      ; load adjusted segment value
+   636                                                  ; clear carry: unnecessary since adc clears it
+   637 000001ED 5E                                      pop     si
+   638 000001EE C3                                      ret
+   639                                  
+   640 000001EF 00<rept>                       times   0x01f1-$+$$ db 0
+   641                                  %ifdef MSCOMPAT
+   642                                  filename        db      "IO      SYS"
+   643                                  %else
+   644 000001F1 49424D42494F202043-     filename        db      "IBMBIO  COM"
+   645 000001FA 4F4D               
+   646                                  %endif
+   647 000001FC 0000                                    db      0,0
+   648                                  
+   649 000001FE 55AA                    sign            dw      0xAA55
+   650                                  
