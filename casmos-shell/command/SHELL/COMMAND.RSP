@@ -1,0 +1,7 @@
+c:\tcpp\LIB\c0s.obj cb_catch.obj+
+dummies.obj+
+batch.obj cmdtable.obj command.obj expalias.obj init.obj kswap.obj loadhigh.obj module.obj+
+redir.obj ver.obj
+command.exe
+command.map
+..\SUPPL\suppl_s.lib ..\cmd\cmds.lib ..\lib\freecom.lib ..\strings\strings.lib c:\tcpp\LIB\cs.lib
