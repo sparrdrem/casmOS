@@ -1,0 +1,1 @@
+casmOS Shell Interpreter v0.0.1 (Alpha) (based on FreeCOM version 0.84-pre XMS_Swap)

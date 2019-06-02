@@ -1,0 +1,13 @@
+Begin3
+Title:          casmOS Shell
+Version:        0.0.1-alpha
+Entered-date:   June 1 2019
+Description:    Based on FreeCOM Shell
+Keywords:       casmos interpreter dos freecom freedos command shell
+Author:         freedos-freecom@lists.sourceforge.net (developers)
+Maintained-by:  freecom@freedos.org (maintainers)
+Primary-site:   https://sparrdrem.github.io/casmOS/
+Alternate-site: http://www.freedos.org/
+Platforms:      dos dosemu
+Copying-policy: GPL
+End
