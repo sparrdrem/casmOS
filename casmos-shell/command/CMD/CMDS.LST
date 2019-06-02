@@ -1,0 +1,125 @@
+Publics by module
+
+ALIAS   	size = 154
+	_cmd_alias                      
+
+BEEP    	size = 10
+	_cmd_beep                       
+
+BREAK   	size = 91
+	_cmd_break                      
+
+CALL    	size = 227
+	_cmd_call                       
+
+CDD     	size = 26
+	_cmd_cdd                        
+
+CHCP    	size = 177
+	_cmd_chcp                       
+
+CHDIR   	size = 27
+	_cmd_chdir                      
+
+CLS     	size = 121
+	_cmd_cls                        
+
+COPY    	size = 2940
+	_cmd_copy                       
+
+CTTY    	size = 203
+	_cmd_ctty                       
+
+DATE    	size = 317
+	_cmd_date                       
+
+DEL     	size = 613
+	_cmd_del                        
+
+DIR     	size = 5355
+	_cmd_dir                          _cmd_vol
+
+DIRS    	size = 17
+	_cmd_dirs                       
+
+DOSKEY  	size = 15
+	_cmd_doskey                     
+
+ECHO    	size = 140
+	_cmd_echo                       
+
+EXIT    	size = 13
+	_internal_exit                  
+
+EXIT2   	size = 16
+	_force_exit                     
+
+FDDEBUG 	size = 0
+
+FOR     	size = 739
+	_cmd_for                          _cmd_for_hackery
+
+GOTO    	size = 114
+	_cmd_goto                       
+
+HISTORY 	size = 165
+	_cmd_history                    
+
+IF      	size = 578
+	_cmd_if                         
+
+LFNFOR  	size = 201
+	_cmd_lfnfor                       _lfncomplete
+	_lfnfor                         
+
+MEMORY  	size = 258
+	_cmd_memory                     
+
+MKDIR   	size = 28
+	_cmd_mkdir                      
+
+PATH    	size = 105
+	_cmd_path                       
+
+PAUSE   	size = 58
+	_cmd_pause                      
+
+POPD    	size = 78
+	_cmd_popd                       
+
+PROMPT  	size = 46
+	_cmd_prompt                     
+
+PUSHD   	size = 75
+	_cmd_pushd                      
+
+REM     	size = 7
+	_cmd_rem                        
+
+REN     	size = 682
+	_cmd_rename                       _myfnmerge
+	_myfnsplit                      
+
+RMDIR   	size = 28
+	_cmd_rmdir                      
+
+SET     	size = 740
+	_cmd_set                        
+
+SHIFT   	size = 62
+	_cmd_shift                      
+
+TIME    	size = 283
+	_cmd_time                       
+
+TRUENAME	size = 58
+	_cmd_truename                   
+
+TYPE    	size = 361
+	_cmd_type                       
+
+VERIFY  	size = 91
+	_cmd_verify                     
+
+WHICH   	size = 112
+	_cmd_which                      
