@@ -1,0 +1,734 @@
+Publics by module
+
+ABSFILE 	size = 37
+	_abspath                        
+
+ALMEMBLK	size = 35
+	_allocMemBlk                    
+
+ALPRMBLK	size = 34
+	_allocPermBlk                   
+
+ALSYSBLK	size = 40
+	_allocSysBlk                    
+
+APP_GET 	size = 100
+	_appendDisable                  
+
+APP_SET 	size = 41
+	_appendRestore                  
+
+BEEP_L  	size = 32
+	_beep_low                       
+
+BEEP_N  	size = 32
+	_beep                           
+
+BRK_GET 	size = 14
+	_getbreak                       
+
+BRK_SET 	size = 13
+	_setbreak                       
+
+CBREAK  	size = 399
+	_chkCBreak                      
+
+CBS     	size = 47
+	_cutBackslash                   
+
+CD_DIR  	size = 396
+	_cd_dir                         
+
+CGETCH  	size = 77
+	_cgetchar                       
+
+CGETTIME	size = 184
+	_cgetchar_timed                 
+
+CHGCTXT 	size = 428
+	_chgCtxt                        
+
+CHGDRV  	size = 41
+	_changeDrive                    
+
+CHGENV  	size = 71
+	_chgEnv                         
+
+CHGENVC 	size = 44
+	_chgEnvCase                     
+
+CHGENVR 	size = 34
+	_chgEnvRemove                   
+
+CLRLINE 	size = 83
+	_clrcmdline                     
+
+CMDINPUT	size = 2026
+	_mywherex                         _mywherey
+	_outc                             _outs
+	_readcommandEnhanced            
+
+COMFILE 	size = 43
+	_comFile                        
+
+COMPFILE	size = 95
+	_comPathFile                    
+
+CRITEND 	size = 26
+	_critEndRepCheck                
+
+CRITRCHK	size = 85
+	_registerCriterRepeatCheckAddr  
+
+CTXT    	size = 2
+	_ctxt                           
+
+CTXT_ADR	size = 75
+	_ctxtAddress                    
+
+CTXT_AS 	size = 53
+	_ctxtAddStatus                  
+
+CTXT_CHG	size = 74
+	_ctxtChgSize                    
+
+CTXT_CLR	size = 97
+	_ctxtClear                      
+
+CTXT_GET	size = 187
+	_ctxtGet                        
+
+CTXT_INF	size = 48
+	_ctxt_info                      
+
+CTXT_MK 	size = 148
+	_ctxtCreate                     
+
+CTXT_MKB	size = 54
+	_ctxtCreateMemBlock             
+
+CTXT_MKN	size = 54
+	_ctxtMkItemName                 
+
+CTXT_POP	size = 100
+	_ctxtPop                        
+
+CTXT_PSH	size = 76
+	_ctxtPush                       
+
+CTXT_RNU	size = 158
+	_ctxtRenumberItems              
+
+CTXT_SET	size = 125
+	_ctxtSet                        
+
+CTXT_SS 	size = 294
+	_ctxtScanStatus                 
+
+CTXT_VW 	size = 135
+	_ctxtView                       
+
+CURDATEL	size = 151
+	_curDateLong                    
+
+CURTIME 	size = 64
+	_curTime                        
+
+CWD     	size = 51
+	_cwd                            
+
+DATEGET 	size = 64
+	__dos_getdate                   
+
+DATESET 	size = 75
+	__dos_setdate                   
+
+DBG_C   	size = 0
+
+DBG_MEM 	size = 0
+
+DBG_PRNT	size = 0
+
+DBG_S   	size = 0
+
+DBG_SN  	size = 0
+
+DEVOPEN 	size = 102
+	_devopen                        
+
+DFN_ERR 	size = 32
+	_display_errno_fnam_error       
+
+DISPCNT 	size = 50
+	_dispCount                      
+
+DISPEXIT	size = 129
+	_displayExitcode                  _exitReason
+
+DRVNUM  	size = 37
+	_drvNum                         
+
+EFCT_001	size = 82
+	_error_env                      
+
+ERR1    	size = 19
+	_error_invalid_switch           
+
+ERR10   	size = 13
+	_error_out_of_memory            
+
+ERR11   	size = 28
+	_error_syntax                   
+
+ERR12   	size = 13
+	_error_nothin_to_do             
+
+ERR13   	size = 17
+	_error_selfcopy                 
+
+ERR14   	size = 24
+	_error_long_batchline           
+
+ERR15   	size = 17
+	_error_bfile_vanished           
+
+ERR16   	size = 21
+	_error_bfile_no_such_label      
+
+ERR17   	size = 13
+	_error_invalid_time             
+
+ERR18   	size = 17
+	_error_env_var                  
+
+ERR19   	size = 17
+	_error_env_var_not_found        
+
+ERR2    	size = 17
+	_error_invalid_lswitch          
+
+ERR20   	size = 17
+	_error_filename_too_long        
+
+ERR21   	size = 13
+	_error_command_too_long         
+
+ERR22   	size = 13
+	_error_line_too_long            
+
+ERR23   	size = 13
+	_error_tempfile                 
+
+ERR24   	size = 17
+	_error_close_quote              
+
+ERR25   	size = 17
+	_error_illformed_option         
+
+ERR26   	size = 17
+	_error_opt_arg                  
+
+ERR27   	size = 17
+	_error_opt_noarg                
+
+ERR28   	size = 13
+	_error_leading_plus             
+
+ERR29   	size = 13
+	_error_trailing_plus            
+
+ERR3    	size = 17
+	_error_too_many_parameters      
+
+ERR30   	size = 17
+	_error_open_file                
+
+ERR31   	size = 17
+	_error_read_file                
+
+ERR32   	size = 17
+	_error_write_file               
+
+ERR33   	size = 24
+	_error_write_file_disc_full     
+
+ERR34   	size = 13
+	_error_copy                     
+
+ERR35   	size = 13
+	_error_nothing_to_do            
+
+ERR36   	size = 17
+	_error_invalid_number           
+
+ERR37   	size = 17
+	_error_init_fully_qualified     
+
+ERR38   	size = 13
+	_error_corrupt_command_line     
+
+ERR39   	size = 13
+	_error_quoted_c_k               
+
+ERR4    	size = 13
+	_error_path_not_found           
+
+ERR40   	size = 13
+	_error_ctty_excluded            
+
+ERR41   	size = 13
+	_error_l_notimplemented         
+
+ERR42   	size = 13
+	_error_u_notimplemented         
+
+ERR43   	size = 13
+	_error_restore_session          
+
+ERR44   	size = 13
+	_error_save_session             
+
+ERR45   	size = 17
+	_error_no_rw_device             
+
+ERR46   	size = 17
+	_error_ctty_dup                 
+
+ERR47   	size = 25
+	_error_no_cwd                   
+
+ERR48   	size = 13
+	_error_kswap_alias_size         
+
+ERR49   	size = 13
+	_error_kswap_allocmem           
+
+ERR5    	size = 13
+	_error_file_not_found           
+
+ERR50   	size = 13
+	_error_if_exist                 
+
+ERR51   	size = 13
+	_error_if_errorlevel            
+
+ERR52   	size = 13
+	_error_if_errorlevel_number     
+
+ERR53   	size = 13
+	_error_if_command               
+
+ERR54   	size = 13
+	_error_alias_out_of_memory      
+
+ERR55   	size = 13
+	_error_alias_insert             
+
+ERR56   	size = 17
+	_error_alias_no_such            
+
+ERR57   	size = 13
+	_error_loading_context          
+
+ERR58   	size = 21
+	_error_dirfct_failed            
+
+ERR59   	size = 17
+	_error_no_alias_name            
+
+ERR6    	size = 17
+	_error_sfile_not_found          
+
+ERR60   	size = 17
+	_error_history_size             
+
+ERR61   	size = 13
+	_error_context_out_of_memory    
+
+ERR62   	size = 13
+	_error_no_context_after_swap    
+
+ERR63   	size = 13
+	_error_out_of_dos_memory        
+
+ERR64   	size = 24
+	_error_context_length           
+
+ERR65   	size = 13
+	_error_context_add_status       
+
+ERR66   	size = 13
+	_error_empty_redirection        
+
+ERR67   	size = 17
+	_error_redirect_from_file       
+
+ERR68   	size = 17
+	_error_redirect_to_file         
+
+ERR69   	size = 13
+	_error_bad_mcb_chain            
+
+ERR7    	size = 13
+	_error_req_param_missing        
+
+ERR70   	size = 17
+	_error_unknown                  
+
+ERR71   	size = 21
+	_error_invalid_drive            
+
+ERR72   	size = 13
+	_error_no_env                   
+
+ERR73   	size = 13
+	_error_on_off                   
+
+ERR74   	size = 13
+	_error_invalid_date             
+
+ERR75   	size = 13
+	_error_for_bad_var              
+
+ERR76   	size = 13
+	_error_for_in                   
+
+ERR77   	size = 13
+	_error_for_parens               
+
+ERR78   	size = 13
+	_error_for_do                   
+
+ERR79   	size = 13
+	_error_for_no_command           
+
+ERR8    	size = 17
+	_error_bad_command              
+
+ERR80   	size = 13
+	_error_goto_label               
+
+ERR81   	size = 13
+	_error_get_codepage             
+
+ERR82   	size = 13
+	_error_set_codepage             
+
+ERR83   	size = 13
+	_error_copy_plus_destination    
+
+ERR84   	size = 17
+	_error_invalid_parameter        
+
+ERR85   	size = 17
+	_error_fcom_is_device           
+
+ERR86   	size = 17
+	_error_fcom_invalid             
+
+ERR9    	size = 13
+	_error_no_pipe                  
+
+EXEC    	size = 179
+	_exec                           
+
+EXEC1   	size = 131
+	_setErrorLevel                  
+
+FARREAD 	size = 180
+	_dos_creatnew                     _farread
+	_farwrite                       
+
+FDATTR  	size = 48
+	_fdattr                         
+
+FDEVOPEN	size = 23
+	_fdevopen                       
+
+FDSATTR 	size = 54
+	_fdsetattr                      
+
+FILECOMP	size = 871
+	_complete_filename                _show_completion_matches
+
+FILLCOMP	size = 293
+	_fillFnam                       
+
+FIND    	size = 328
+	_skip_word                        _skipdm
+
+FREEP   	size = 40
+	_freep                          
+
+FRSYSBLK	size = 29
+	_freeSysBlk                     
+
+FSTPCPY 	size = 34
+	__fstpcpy                       
+
+GALLSTR 	size = 16
+	_dosGetAllocStrategy            
+
+GET1MCB 	size = 14
+	_GetFirstMCB                    
+
+GETENV  	size = 61
+	_getEnv                         
+
+GOXY    	size = 27
+	_goxy                           
+
+GRABFCOM	size = 424
+	_grabComFilename                
+
+GUMBLINK	size = 16
+	_dosGetUMBLinkState             
+
+HDLRCTXT	size = 119
+	_breakVarAssign                 
+
+HIST_GET	size = 89
+	_histGet                        
+
+HIST_SET	size = 36
+	_histSet                        
+
+INPUTDOS	size = 379
+	_readcommandDOS                 
+
+ISADEV  	size = 24
+	_isadev                         
+
+IS_EMPTY	size = 49
+	_is_empty                       
+
+IS_FNAMC	size = 84
+	_is_fnchar                      
+
+IS_FNSTR	size = 38
+	_is_fnstr                       
+
+IS_PCHR 	size = 24
+	_is_pathdelim                   
+
+KEYPRSD 	size = 42
+	_keypressed                     
+
+KSWAP_C 	size = 2
+	_kswapContext                   
+
+LASTDGET	size = 45
+	_lastDirGet                     
+
+LASTDSET	size = 44
+	_lastDirSet                     
+
+LEADOPT 	size = 137
+	_leadOptions                    
+
+LFNFUNCS	size = 1143
+	_getshortfilename                 _lfn_creat
+	_lfnchdir                         _lfnfindclose
+	_lfnfindfirst                     _lfnfindnext
+	_lfnmkdir                         _lfnrename
+	_lfnrmdir                       
+
+LOWEXEC 	size = 52
+	_lowLevelExec                   
+
+LTRIMCL 	size = 77
+	_ltrimcl                        
+
+LTRIMSP 	size = 35
+	_ltrimsp                        
+
+LWR1WD  	size = 43
+	_partstrlower                   
+
+MATCH   	size = 68
+	_match_                         
+
+MESSAGES	size = 676
+	_msgSegm                          _msgSegment
+	_strCnt                           _unloadMsgs
+
+MKTMPFIL	size = 198
+	_mktempfile                     
+
+MK_RDDIR	size = 99
+	_mk_rd_dir                      
+
+MSG_DFLT	size = 147
+	_defaultMessage                 
+
+MSG_DPS 	size = 90
+	_displayError                     _displayString
+
+MSG_FSTR	size = 108
+	_getString                      
+
+MSG_GET 	size = 51
+	_getMessage                     
+
+MSG_GPT 	size = 52
+	_getPromptString                
+
+MSG_MKEY	size = 54
+	_mapMetakey                     
+
+MSG_PRMP	size = 106
+	_userprompt                     
+
+MUX_AE  	size = 331
+	_runExtension                   
+
+MYPERROR	size = 41
+	_myperror                       
+
+NLS     	size = 20
+	_nlsBuf                           _refreshNLS
+
+NLS_DATE	size = 186
+	_nls_makedate                   
+
+NLS_TIME	size = 353
+	_nls_maketime                   
+
+NUM_FMT 	size = 152
+	_convert                        
+
+ONOFF   	size = 124
+	_onoffStr                       
+
+OPENF   	size = 105
+	_isDeviceName                   
+
+OPTSB   	size = 76
+	_optScanBool_                   
+
+OPTSI   	size = 99
+	_optScanInteger_                
+
+OPTSS   	size = 57
+	_optScanString_                 
+
+PARSENUM	size = 169
+	_parsenum                       
+
+PRF     	size = 1145
+	_fprintf                          _printf
+	_puts                             _sprintf
+	_stderr                           _stdin
+	_stdout                           _vfprintf
+	_vprintf                          _vsprintf
+
+PRPROMPT	size = 481
+	_displayPrompt                  
+
+PR_DATE 	size = 416
+	_parsedate                      
+
+PR_PRMPT	size = 43
+	_printprompt                    
+
+PR_TIME 	size = 294
+	_parsetime                      
+
+READCMD 	size = 16
+	_readcommand                    
+
+REALNUM 	size = 63
+	_realNum                        
+
+RES     	size = 24
+	_enumResources                  
+
+RESFILE 	size = 83
+	_comResFile                     
+
+RES_R   	size = 306
+	_enumFileResources              
+
+RES_VALD	size = 104
+	_validResFile                   
+
+RES_W   	size = 112
+	_endResource                      _startResource
+
+RMTMPFIL	size = 24
+	_killtmpfn                      
+
+RTRIMCL 	size = 80
+	_rtrimcl                        
+
+RTRIMSP 	size = 45
+	_rtrimsp                        
+
+SALLOC  	size = 13
+	_dosSetAllocStrategy            
+
+SAMEFILE	size = 80
+	_samefile                       
+
+SCANCMD 	size = 207
+	_scanCmdline                    
+
+SCANOPT 	size = 293
+	_currCmdHelpScreen                _scanOption
+
+SESSION 	size = 138
+	_restoreSession                   _saveSession
+
+SHOWCMDS	size = 197
+	_showcmds                       
+
+SKQWD   	size = 194
+	_skipqword                      
+
+SPFNAM  	size = 31
+	_skipfnam                       
+
+SPLIT   	size = 213
+	_split                          
+
+SUMBLINK	size = 13
+	_dosSetUMBLinkState             
+
+TEMPFILE	size = 104
+	_rmtmpfile                        _tempfile
+
+TIMEGET 	size = 66
+	__dos_gettime                   
+
+TIMESET 	size = 100
+	__dos_settime                   
+
+TMPNAM  	size = 241
+	_tmpfn                          
+
+TRIMCL  	size = 19
+	_trimcl                         
+
+TRIMSP  	size = 19
+	_trimsp                         
+
+TRUEPATH	size = 36
+	_truepath                       
+
+TRUNCATE	size = 42
+	_truncate                       
+
+TXTLEND 	size = 51
+	_textlineEnd                    
+
+UNQUOTE 	size = 174
+	_unquote                        
+
+VCGETCH 	size = 65
+	_vcgetchar                      
+
+VCGETSTR	size = 43
+	_vcgetcstr                      
+
+WHERE   	size = 386
+	_find_which                     
