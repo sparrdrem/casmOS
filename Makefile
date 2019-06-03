@@ -25,8 +25,8 @@ iso: $(iso)
 
 $(iso): $(kernel) $(grub_cfg) $(msdos_image) $(memdisk)
 	@mkdir -p build/isofiles/boot/grub
-	@cp $(msdos_image) build/isofiles/boot
-	@cp $(memdisk) build/isofiles/boot
+	@cp $(msdos_image) build/isofiles
+	@cp $(memdisk) build/isofiles
 	@cp $(kernel) build/isofiles/boot/kernel.bin
 	@cp $(grub_cfg) build/isofiles/boot/grub
 	@grub-mkrescue -o $(iso) build/isofiles 2> /dev/null
