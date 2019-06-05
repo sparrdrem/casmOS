@@ -8,6 +8,7 @@
 casmOS is a open source operating system based on multiple open source projects readily available on the net. This project has used code from the following projects:
 
 - FreeDOS/FreeCOM
+- POWER for APM Machines
 
 ====================
   1. Prerequisites
@@ -20,6 +21,7 @@ You will need a copy of Windows 98/Me to install. The Windows version has to nat
 ------------------------|----------------------
 	 freecom	|    tc101, nasm098
 	 kernel		|    tc201, nasm098
+	  power		|	nasm098
 
 FreeCOM can be found in <master>/casmos-shell/command. FreeDOS Kernel can be found in <master>/casmos-shell/kernel. NASM098.EXE can be found in the same folder as readme.txt. TC101 is "Borland Turbo C/C++ 1.0(1)" and TC201 is "Borland Turbo C/C++ 2.0(1)".
 
@@ -31,6 +33,7 @@ It is always recommended that you copy freecom and kernel to a folder on the roo
 
 freecom: <directory>
 kernel: <directory>
+power: <directory>
 tc101: C:\TCPP
 tc201: C:\TC201
 nasm098: C:\WINDOWS
