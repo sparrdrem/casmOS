@@ -1,3 +1,5 @@
+<img src="casmos-icon.png" alt="casmOS Logo"></img>
+
 # casmOS
 Operating System coded in C and Assembly.
 
