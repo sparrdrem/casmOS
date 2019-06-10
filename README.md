@@ -1,4 +1,4 @@
-<img src="casmos-icon.png" alt="casmOS Logo"></img>
+<img src="casmos-logo.png" alt="casmOS Logo"></img>
 
 # casmOS
 Operating System coded in C and Assembly.
