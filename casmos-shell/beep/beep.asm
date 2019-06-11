@@ -4,6 +4,7 @@
 ; ***************************************************
 ; This program is open source and comes with absolutely
 ; NO WARRANTY.
+;
 
 BITS 16
 
@@ -11,8 +12,6 @@ ORG 100h
 
 START:
     ; Configures the beep to play for ~2sec
-    CALL WELCOME_MSG
-    
     CALL BEEP_SETUP
     
     MOV AX, 2000
@@ -24,13 +23,15 @@ START:
     
     CALL BEEP_TEARDOWN
     
+    CALL WELCOME_MSG
+    
     MOV AX, 4c00h
     INT 21h
+    
     RET
     
 WELCOME_MSG:
     ; Displays msg upon entrance
-    ORG 0x100h
     
     MOV DX, MSG
     MOV AH, 9
@@ -39,7 +40,8 @@ WELCOME_MSG:
     MOV AH, 0x4c
     INT 21h
 
-    MSG DB 'BEEP Driver. Copyright (C) 2018-2019 SparrDrem', 0x0d, 0x0a, '$'
+    MSG DB 'BEEP Driver for casmOS. Copyright (C) 2018-2019 SparrDrem.', 0x0d, 0x0a, '$'
+    RET
     
 BEEP_SETUP:
     ; Defines the BEEP and how long to play BEEP
@@ -144,6 +146,7 @@ BEEP_PLAY:
     
     POP DX
     POP AX
+    
     RET
     
 SOUND_PLAYING      DB  0
