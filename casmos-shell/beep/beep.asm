@@ -11,6 +11,8 @@ ORG 100h
 
 START:
     ; Configures the beep to play for ~2sec
+    CALL WELCOME_MSG
+    
     CALL BEEP_SETUP
     
     MOV AX, 2000
@@ -24,6 +26,20 @@ START:
     
     MOV AX, 4c00h
     INT 21h
+    RET
+    
+WELCOME_MSG:
+    ; Displays msg upon entrance
+    ORG 0x100h
+    
+    MOV DX, MSG
+    MOV AH, 9
+    INT 21h
+
+    MOV AH, 0x4c
+    INT 21h
+
+    MSG DB 'BEEP Driver. Copyright (C) 2018-2019 SparrDrem', 0x0d, 0x0a, '$'
     
 BEEP_SETUP:
     ; Defines the BEEP and how long to play BEEP
