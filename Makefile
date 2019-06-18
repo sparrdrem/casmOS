@@ -6,6 +6,7 @@ memdisk := src/arch/$(arch)/memdisk
 
 linker_script := src/arch/$(arch)/linker.ld
 grub_cfg := src/arch/$(arch)/grub.cfg
+default_png := src/arch/$(arch)/default.png
 assembly_source_files := $(wildcard src/arch/$(arch)/*.asm)
 assembly_object_files := $(patsubst src/arch/$(arch)/%.asm, \
 	build/arch/$(arch)/%.o, $(assembly_source_files))
@@ -29,6 +30,7 @@ $(iso): $(kernel) $(grub_cfg) $(msdos_image) $(memdisk)
 	@cp $(memdisk) build/isofiles/boot
 	@cp $(kernel) build/isofiles/boot/kernel.bin
 	@cp $(grub_cfg) build/isofiles/boot/grub
+	@cp $(default_png) build/isofiles/boot/grub
 	@grub-mkrescue -o $(iso) build/isofiles 2> /dev/null
 	@rm -r build/isofiles
 
