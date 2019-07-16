@@ -26,6 +26,12 @@ echo copying config.sys..
 copy config.sys %D%
 echo copying sys.com..
 copy sys.com %D%
+echo copying ansi.sys..
+copy ansi.sys %D%
+echo copying beep.com..
+copy beep.com %D%
+echo copying shutdown.com..
+copy shutdown.com %D%
 label %D% casmos
 
 rem exit methods
