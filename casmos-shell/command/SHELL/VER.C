@@ -1,4 +1,4 @@
-/* $Id: ver.c 1580 2011-04-27 15:51:33Z bartoldeman $
+/* $Id: ver.c 1833 2018-08-14 11:44:31Z bartoldeman $
  * VER.C
  *
  *  06/30/98 (Rob Lake)
@@ -29,7 +29,7 @@
  * 2001/02/16 ska
  * bugfix: VER (without option) displays too much information
  * chg: using strings (except FreeCOM's own name)
- * 
+ *
  * 2019/06/01 SparrDrem Industries Inc.
  * 	fork project to casmOS
  */
@@ -44,18 +44,27 @@
 #include "../err_fcts.h"
 #include "../strings.h"
 
-const char shellver[] = "0.84-pre2"
+const char shellver[] = "0.84-pre5 - "
+#if defined(__BORLANDC__)
+	"BORLANDC"
+#elif defined(__TURBOC__)
+	"TURBOC"
+#elif defined(__WATCOMC__)
+	"WATCOMC"
+#elif defined(__GNUC__)
+	"GNUC"
+#endif
 #ifdef FEATURE_XMS_SWAP
-	" XMS_Swap"
+	" - XMS_Swap"
 #endif
 ;
 static const char shelldate[] = __DATE__ " " __TIME__;
-const char shellname[] = "casmOS Shell v0.0.1 (Alpha) (based on FreeCOM version 0.84-pre XMS_Swap)";
+const char shellname[] = "FreeCom";
 
 #if 0
 void short_version(void)
 {
-  printf("casmOS Shell v0.0.1 (Alpha) (based on FreeCOM version 0.84-pre XMS_Swap)");
+  printf("casmOS Shell v0.0.2 (Alpha) (based on FreeCOM version 0.84-pre5 XMS_Swap)");
 }
 #endif
 
@@ -89,7 +98,7 @@ int cmd_ver (char * rest) {
 #if 0
   short_version();
 #else
-  printf("casmOS Shell v0.0.1 (Alpha) (based on FreeCOM version 0.84-pre XMS_Swap)");
+  printf("casmOS Shell v0.0.2 (Alpha) (based on FreeCOM version 0.84-pre5 XMS_Swap)");
 #endif
 
 	optR = optW = optD = optC = 0;
