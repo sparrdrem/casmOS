@@ -3,7 +3,7 @@
 ; ====================================
 ; Changelog:
 ;
-; July 16 2019: Remove ORG instruction
+; July 16 2019: Remove ORG and SECTION
 ;
 ; June 25 2019: Add the BEEP driver
 ;
@@ -11,7 +11,8 @@
 
 global start
 
-section .text
+; UGH SO MANY DAMN PROBLEMS
+;section .text
 bits 32
 ; This might be causing the problem?
 ;org 100h
