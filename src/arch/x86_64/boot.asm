@@ -3,6 +3,8 @@
 ; ====================================
 ; Changelog:
 ;
+; July 16 2019: Remove ORG instruction
+;
 ; June 25 2019: Add the BEEP driver
 ;
 ; November 16 2016: Create the script?
@@ -11,7 +13,8 @@ global start
 
 section .text
 bits 32
-org 100h
+; This might be causing the problem?
+;org 100h
 
 start:
     ; print `OK` to screen
