@@ -5,6 +5,14 @@ Operating System coded in C and Assembly.
 
 https://os.phil-opp.com/multiboot-kernel/
 
+### Download via GIT
+
+It's preferred that you use GIT to clone our project rather than just downloading a zip archive. Cloning our allows you to verify that you have all files and that none are corrupt upon completion of download. To clone this repo:
+
+```
+git clone https://github.com/sparrdrem/casmOS.git
+```
+
 ### Building the ISO
 
 To build the ISO, simply run
