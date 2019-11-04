@@ -57,7 +57,7 @@ Each folder has two batch files that must be executed when compiling, CONFIG.BAT
   3. Creating a Floppy Image
 ==============================
 
-You can create a floppy image of casmOS by executing the batch file INSTALL.BAT in <master>/casmos-shell/casmos. This will require that you have a blank (yes blank, this will require that you wiped your floppy) 1.44MiB High Density IBM Formatted 3½" Floppy Diskette. If you do not own a floppy diskette, you can mount the image "blank-image-144.img" (which can be found in the same folder as README.TXT) in a virtual machine and install it there.
+You can create a floppy image of casmOS by executing the batch file INSTALL.BAT in <master>/casmos-shell/casmos. This will require that you have a blank (yes blank, this will require that you wiped your floppy) 1.44MiB High Density IBM Formatted 3Â½" Floppy Diskette. If you do not own a floppy diskette, you can mount the image "blank-image-144.img" (which can be found in the same folder as README.TXT) in a virtual machine and install it there.
 
 ===============================
   3.1. Using the Floppy Image
