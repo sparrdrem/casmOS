@@ -2,6 +2,7 @@ arch ?= x86_64
 kernel := build/kernel-$(arch).bin
 iso := build/os-$(arch).iso
 freedos_floppy := src/arch/$(arch)/filesystem.img
+msdos_floppy := src/arch/$(arch)/casmosalpha.img
 memdisk := src/arch/$(arch)/memdisk
 
 linker_script := src/arch/$(arch)/linker.ld
@@ -27,6 +28,7 @@ iso: $(iso)
 $(iso): $(kernel) $(grub_cfg) $(msdos_image) $(memdisk)
 	@mkdir -p build/isofiles/boot/grub
 	@cp $(freedos_floppy) build/isofiles/boot
+	@cp $(msdos_floppy) build/isofiles/boot
 	@cp $(memdisk) build/isofiles/boot
 	@cp $(kernel) build/isofiles/boot/kernel.bin
 	@cp $(grub_cfg) build/isofiles/boot/grub
