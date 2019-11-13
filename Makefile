@@ -14,7 +14,7 @@ assembly_object_files := $(patsubst src/arch/$(arch)/%.asm, \
 	build/arch/$(arch)/%.o, $(assembly_source_files))
 assembly64_source_files := $(wildcard src/arch/$(arch)/64bit/*.asm)
 assembly64_object_files := $(patsubst src/arch/$(arch)/64bit/%.asm, \
-	build/arch/$(arch)/64bit/%.o $(assembly64_source_files))
+	build/arch/$(arch)/64bit/%.o, $(assembly64_source_files))
 
 .PHONY: all clean run iso
 
