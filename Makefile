@@ -43,6 +43,8 @@ $(iso): $(kernel) $(grub_cfg) $(freedos_floppy) $(msdos_floppy) $(memdisk)
 
 $(kernel): $(assembly_object_files) $(linker_script)
 	@ld -n -T $(linker_script) -o $(kernel) $(assembly_object_files)
+
+$(kernel64):
 	@ld -n -T $(linker_script) -o $(kernel64) $(assembly64_object_files)
 
 # compile assembly files
