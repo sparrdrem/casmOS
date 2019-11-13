@@ -1,5 +1,6 @@
 arch ?= x86_64
 kernel := build/kernel-$(arch).bin
+kernel64 := src/arch/$(arch)/kernel64.bin
 iso := build/os-$(arch).iso
 freedos_floppy := src/arch/$(arch)/filesystem.img
 msdos_floppy := src/arch/$(arch)/casmosalpha.img
@@ -25,7 +26,7 @@ run: $(iso)
 
 iso: $(iso)
 
-$(iso): $(kernel) $(grub_cfg) $(freedos_floppy) $(msdos_floppy) $(memdisk)
+$(iso): $(kernel) $(grub_cfg) $(freedos_floppy) $(msdos_floppy) $(memdisk) $(kernel64)
 	@mkdir -p build/isofiles/boot/grub
 	@cp $(freedos_floppy) build/isofiles/boot
 	@cp $(msdos_floppy) build/isofiles/boot
