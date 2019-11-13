@@ -1,5 +1,6 @@
 arch ?= x86_64
 kernel := build/kernel-$(arch).bin
+kernel64 := build/kernel64-$(arch).bin
 iso := build/os-$(arch).iso
 freedos_floppy := src/arch/$(arch)/filesystem.img
 msdos_floppy := src/arch/$(arch)/casmosalpha.img
@@ -11,6 +12,9 @@ default_png := src/arch/$(arch)/default.png
 assembly_source_files := $(wildcard src/arch/$(arch)/*.asm)
 assembly_object_files := $(patsubst src/arch/$(arch)/%.asm, \
 	build/arch/$(arch)/%.o, $(assembly_source_files))
+assembly64_source_files := $(wildcard src/arch/$(arch)/64bit/*.asm)
+assembly64_object_files := $(patsubst src/arch/$(arch)/64bit/%.asm, \
+	build/arch/$(arch)/64bit/%.o $(assembly64_source_files))
 
 .PHONY: all clean run iso
 
@@ -25,12 +29,13 @@ run: $(iso)
 
 iso: $(iso)
 
-$(iso): $(kernel) $(grub_cfg) $(msdos_image) $(memdisk)
+$(iso): $(kernel) $(grub_cfg) $(freedos_floppy) $(msdos_floppy) $(memdisk)
 	@mkdir -p build/isofiles/boot/grub
 	@cp $(freedos_floppy) build/isofiles/boot
 	@cp $(msdos_floppy) build/isofiles/boot
 	@cp $(memdisk) build/isofiles/boot
 	@cp $(kernel) build/isofiles/boot/kernel.bin
+	@cp $(kernel64) build/isofiles/boot/kernel64.bin
 	@cp $(grub_cfg) build/isofiles/boot/grub
 	@cp $(default_png) build/isofiles/boot/grub
 	@grub-mkrescue -o $(iso) build/isofiles 2> /dev/null
@@ -38,8 +43,12 @@ $(iso): $(kernel) $(grub_cfg) $(msdos_image) $(memdisk)
 
 $(kernel): $(assembly_object_files) $(linker_script)
 	@ld -n -T $(linker_script) -o $(kernel) $(assembly_object_files)
+	@ld -n -T $(linker_script) -o $(kernel64) $(assembly64_object_files)
 
 # compile assembly files
 build/arch/$(arch)/%.o: src/arch/$(arch)/%.asm
+	@mkdir -p $(shell dirname $@)
+	@nasm -felf64 $< -o $@
+build/arch/$(arch)/64bit/%.o: src/arch/$(arch)/64bit/%.asm
 	@mkdir -p $(shell dirname $@)
 	@nasm -felf64 $< -o $@
